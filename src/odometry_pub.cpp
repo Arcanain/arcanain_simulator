@@ -3,6 +3,7 @@
 #include "geometry_msgs/msg/twist.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "nav_msgs/msg/path.hpp"  // Pathを使用するために追加
+#include "nav_msgs/msg/occupancy_grid.hpp"
 #include "tf2/LinearMath/Quaternion.h"  // tf2::Quaternionを使用するために追加
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 #include "tf2_ros/static_transform_broadcaster.h"
@@ -18,6 +19,7 @@ public:
   {
     odom_pub = this->create_publisher<nav_msgs::msg::Odometry>("odom", 50);
     path_pub = this->create_publisher<nav_msgs::msg::Path>("odom_path", 50);
+    localmap_pub = this->create_publisher<nav_msgs::msg::OccupancyGrid>("local_map", 10);
     odom_broadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(*this);
 
     // cmd_velサブスクライバを追加
@@ -106,6 +108,25 @@ private:
     // パスを公開
     path_pub->publish(path);
 
+    // localmapの設定とpublish
+    auto map = nav_msgs::msg::OccupancyGrid();
+    map.header.stamp = current_time;
+    map.header.frame_id = "base_link";
+    map.info.resolution = 0.1;  // メートル/ピクセル
+    map.info.width = 40;       // 4m x 4mの地図
+    map.info.height = 40;
+    map.info.origin.position.x = -(map.info.height * map.info.resolution) / 2.0;
+    map.info.origin.position.y = -(map.info.width * map.info.resolution) / 2.0;
+    map.info.origin.position.z = 0.0;
+    map.info.origin.orientation.w = 1.0;
+
+    // 地図データの初期化（すべてを未知(-1)に設定）
+    map.data = std::vector<int8_t>(map.info.width * map.info.height, -1);
+
+    // ローカルマップをパブリッシュ
+    localmap_pub->publish(map);
+
+    // 時刻の保存
     last_time = current_time;
   }
 
@@ -126,7 +147,8 @@ private:
   }
 
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub;
-  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub;  // パスを公開するためのパブリッシャー
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub;
+  rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr localmap_pub;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_subscriber;
   std::shared_ptr<tf2_ros::TransformBroadcaster> odom_broadcaster;
   std::shared_ptr<tf2_ros::StaticTransformBroadcaster> static_broadcaster_;
