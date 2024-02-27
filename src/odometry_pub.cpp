@@ -115,9 +115,9 @@ private:
     static_transform_stamped.header.stamp = this->get_clock()->now();
     static_transform_stamped.header.frame_id = "map";
     static_transform_stamped.child_frame_id = "odom";
-    static_transform_stamped.transform.translation.x = 1.0;
-    static_transform_stamped.transform.translation.y = 1.0;
-    static_transform_stamped.transform.translation.z = 0.0;  // 仮にz方向に0.1mのオフセット
+    static_transform_stamped.transform.translation.x = 0.0;
+    static_transform_stamped.transform.translation.y = 0.0;
+    static_transform_stamped.transform.translation.z = 0.0;
     static_transform_stamped.transform.rotation.x = 0.0;
     static_transform_stamped.transform.rotation.y = 0.0;
     static_transform_stamped.transform.rotation.z = 0.0;

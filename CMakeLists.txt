@@ -12,14 +12,20 @@ find_package(tf2_geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
+find_package(visualization_msgs REQUIRED)
 
 # odometry_pub
 add_executable(odometry_pub src/odometry_pub.cpp)
 ament_target_dependencies(odometry_pub rclcpp tf2_geometry_msgs nav_msgs geometry_msgs tf2_ros)
 
+# obstacle_pub
+add_executable(obstacle_pub src/obstacle_pub.cpp)
+ament_target_dependencies(obstacle_pub rclcpp visualization_msgs)
+
 # Install Cpp executables
 install(TARGETS
   odometry_pub
+  obstacle_pub
   DESTINATION lib/${PROJECT_NAME}
 )
 

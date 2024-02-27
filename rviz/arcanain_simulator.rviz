@@ -170,6 +170,18 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /odom_path
       Value: true
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: MarkerArray
+      Namespaces:
+        obstacle_clusters: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /obstacle_markers
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -216,16 +228,16 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 12.442473411560059
+      Distance: 13.373031616210938
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.3791501820087433
-        Y: 0.0067855678498744965
-        Z: -6.633857992710546e-06
+        X: -0.03236960992217064
+        Y: 0.014342578127980232
+        Z: -1.4335303603729699e-05
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
@@ -234,7 +246,7 @@ Visualization Manager:
       Pitch: 1.5697963237762451
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 1.5703978538513184
+      Yaw: 1.5703989267349243
     Saved: ~
 Window Geometry:
   Displays:

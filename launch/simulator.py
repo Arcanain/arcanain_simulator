@@ -44,9 +44,15 @@ def generate_launch_description():
         parameters=[{'joint_state_publisher': robot_description}]
     )
 
-    odometry_node = Node(
+    odometry_pub_node = Node(
         package=package_name,
         executable='odometry_pub',
+        output="screen",
+    )
+
+    obstacle_pub_node = Node(
+        package=package_name,
+        executable='obstacle_pub',
         output="screen",
     )
 
@@ -54,7 +60,8 @@ def generate_launch_description():
         rviz_node,
         robot_description_rviz_node,
         joint_state_publisher_rviz_node,
-        odometry_node,
+        odometry_pub_node,
+        obstacle_pub_node,
     ]
 
     return LaunchDescription(nodes)
