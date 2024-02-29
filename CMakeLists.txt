@@ -16,11 +16,11 @@ find_package(visualization_msgs REQUIRED)
 
 # odometry_pub
 add_executable(odometry_pub src/odometry_pub.cpp)
-ament_target_dependencies(odometry_pub rclcpp tf2_geometry_msgs nav_msgs geometry_msgs tf2_ros)
+ament_target_dependencies(odometry_pub rclcpp tf2_geometry_msgs nav_msgs geometry_msgs tf2_ros visualization_msgs)
 
 # obstacle_pub
 add_executable(obstacle_pub src/obstacle_pub.cpp)
-ament_target_dependencies(obstacle_pub rclcpp visualization_msgs)
+ament_target_dependencies(obstacle_pub rclcpp nav_msgs visualization_msgs)
 
 # Install Cpp executables
 install(TARGETS

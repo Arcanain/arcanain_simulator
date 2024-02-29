@@ -8,6 +8,7 @@
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 #include "tf2_ros/static_transform_broadcaster.h"
 #include "tf2_ros/transform_broadcaster.h"
+#include "visualization_msgs/msg/marker.hpp"
 
 using namespace std::chrono_literals;
 
@@ -20,6 +21,9 @@ public:
     odom_pub = this->create_publisher<nav_msgs::msg::Odometry>("odom", 50);
     path_pub = this->create_publisher<nav_msgs::msg::Path>("odom_path", 50);
     localmap_pub = this->create_publisher<nav_msgs::msg::OccupancyGrid>("local_map", 10);
+    laser_range_pub = this->create_publisher<visualization_msgs::msg::Marker>(
+      "laser_range_marker",
+      10);
     odom_broadcaster = std::make_shared<tf2_ros::TransformBroadcaster>(*this);
 
     // cmd_velサブスクライバを追加
@@ -35,7 +39,7 @@ public:
 
     path.header.frame_id = "odom";  // パスのフレームIDを設定
 
-    timer_ = this->create_wall_timer(100ms, std::bind(&OdometryPublisher::timer_callback, this));
+    timer_ = this->create_wall_timer(50ms, std::bind(&OdometryPublisher::timer_callback, this));
 
     // 静的な変換を送信するタイマー
     static_broadcaster_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(this);
@@ -52,6 +56,11 @@ private:
 
   void timer_callback()
   {
+    /**
+    *******************************************************************************************
+    * Odometry Calculation
+    *******************************************************************************************
+    */
     current_time = this->get_clock()->now();
 
     double dt = (current_time - last_time).seconds();
@@ -96,6 +105,11 @@ private:
 
     odom_pub->publish(odom);
 
+    /**
+    *******************************************************************************************
+    * Odometry Path Publish
+    *******************************************************************************************
+    */
     // パスに現在の位置を追加
     geometry_msgs::msg::PoseStamped this_pose_stamped;
     this_pose_stamped.pose.position.x = x;
@@ -108,6 +122,11 @@ private:
     // パスを公開
     path_pub->publish(path);
 
+    /**
+    *******************************************************************************************
+    * local costmap Publish
+    *******************************************************************************************
+    */
     // localmapの設定とpublish
     auto map = nav_msgs::msg::OccupancyGrid();
     map.header.stamp = current_time;
@@ -125,6 +144,41 @@ private:
 
     // ローカルマップをパブリッシュ
     localmap_pub->publish(map);
+
+    /**
+    *******************************************************************************************
+    * laser range visualize publish
+    *******************************************************************************************
+    */
+    // 円の線を描くマーカーを作成
+    visualization_msgs::msg::Marker line_strip_marker;
+    line_strip_marker.header.frame_id = "base_link";
+    line_strip_marker.header.stamp = current_time;
+    line_strip_marker.ns = "circle_line";
+    line_strip_marker.id = 1;
+    line_strip_marker.type = visualization_msgs::msg::Marker::LINE_STRIP;
+    line_strip_marker.action = visualization_msgs::msg::Marker::ADD;
+    line_strip_marker.pose.orientation.w = 1.0;
+    line_strip_marker.scale.x = 0.05;  // 線の太さ
+    line_strip_marker.color.r = 1.0;
+    line_strip_marker.color.g = 0.0;
+    line_strip_marker.color.b = 0.0;
+    line_strip_marker.color.a = 1.0;  // 不透明
+
+    // 円周上の点を追加
+    double radius = 2.0;
+    int num_points = 100;
+    for (int i = 0; i <= num_points; ++i) {
+      double angle = i * 2.0 * M_PI / num_points;
+      geometry_msgs::msg::Point p;
+      p.x = radius * cos(angle);
+      p.y = radius * sin(angle);
+      p.z = 0.0;
+      line_strip_marker.points.push_back(p);
+    }
+
+    // マーカーをパブリッシュ
+    laser_range_pub->publish(line_strip_marker);
 
     // 時刻の保存
     last_time = current_time;
@@ -149,6 +203,7 @@ private:
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub;
   rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr localmap_pub;
+  rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr laser_range_pub;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_subscriber;
   std::shared_ptr<tf2_ros::TransformBroadcaster> odom_broadcaster;
   std::shared_ptr<tf2_ros::StaticTransformBroadcaster> static_broadcaster_;
