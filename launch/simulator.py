@@ -56,12 +56,19 @@ def generate_launch_description():
         output="screen",
     )
 
+    waypoint_pub_node = Node(
+        package=package_name,
+        executable='waypoint_pub',
+        output="screen",
+    )
+
     nodes = [
         rviz_node,
         robot_description_rviz_node,
         joint_state_publisher_rviz_node,
         odometry_pub_node,
         obstacle_pub_node,
+        waypoint_pub_node,
     ]
 
     return LaunchDescription(nodes)

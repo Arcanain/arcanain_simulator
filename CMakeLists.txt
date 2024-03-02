@@ -22,10 +22,15 @@ ament_target_dependencies(odometry_pub rclcpp tf2_geometry_msgs nav_msgs geometr
 add_executable(obstacle_pub src/obstacle_pub.cpp)
 ament_target_dependencies(obstacle_pub rclcpp nav_msgs visualization_msgs)
 
+# waypoint_pub
+add_executable(waypoint_pub src/waypoint_pub.cpp)
+ament_target_dependencies(waypoint_pub rclcpp nav_msgs geometry_msgs)
+
 # Install Cpp executables
 install(TARGETS
   odometry_pub
   obstacle_pub
+  waypoint_pub
   DESTINATION lib/${PROJECT_NAME}
 )
 
