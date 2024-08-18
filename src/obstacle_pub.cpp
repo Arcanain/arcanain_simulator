@@ -98,67 +98,75 @@ private:
     delete_marker_array.markers.push_back(delete_marker);
     local_obstacle_pub->publish(delete_marker_array);
   }
-
   void odometry_callback(const nav_msgs::msg::Odometry::SharedPtr msg)
   {
-    // base_linkの位置を更新
-    base_x = msg->pose.pose.position.x;
-    base_y = msg->pose.pose.position.y;
-    //double yaw = tf2::getYaw(msg->pose.pose.orientation);  // ロボットの現在の向きを取得
-    tf2::Quaternion quat;
-    tf2::fromMsg(msg->pose.pose.orientation, quat);
-    tf2::Matrix3x3 mat(quat);
-    double roll_tmp, pitch_tmp, yaw_tmp;
-    mat.getRPY(roll_tmp, pitch_tmp, yaw_tmp);
+      // base_linkの位置を更新
+      base_x = msg->pose.pose.position.x;
+      base_y = msg->pose.pose.position.y;
 
-    double yaw = yaw_tmp;
+      tf2::Quaternion quat;
+      tf2::fromMsg(msg->pose.pose.orientation, quat);
+      tf2::Matrix3x3 mat(quat);
+      double roll_tmp, pitch_tmp, yaw_tmp;
+      mat.getRPY(roll_tmp, pitch_tmp, yaw_tmp);
 
+      double yaw = yaw_tmp;
 
-    visualization_msgs::msg::MarkerArray marker_array;
-    int id = 0;
+      visualization_msgs::msg::MarkerArray marker_array;
+      int id = 0;
 
-    for (const auto & obstacle : obstacles) {
-      // base_linkからの距離を計算
-      double distance = std::sqrt(
-        std::pow(obstacle.x - base_x, 2) + std::pow(obstacle.y - base_y, 2));
+      for (const auto & obstacle : obstacles) {
+          // base_linkからの距離を計算
+          double distance = std::sqrt(
+              std::pow(obstacle.x - base_x, 2) + std::pow(obstacle.y - base_y, 2));
 
-      // base_linkから見た障害物の相対角度を計算
-      double angle_to_obstacle = std::atan2(obstacle.y - base_y, obstacle.x - base_x);
+          // base_linkから見た障害物の相対角度を計算
+          double angle_to_obstacle = std::atan2(obstacle.y - base_y, obstacle.x - base_x);
 
-      // 相対角度をロボットの前方180度内に制限
-      double angle_diff = std::fmod(angle_to_obstacle - yaw + M_PI, 2 * M_PI) - M_PI;
+          // 相対角度をロボットの前方180度内に制限
+          double angle_diff = std::fmod(angle_to_obstacle - yaw + M_PI, 2 * M_PI) - M_PI;
 
-      // 半径2m以内かつ前方180度内にある障害物のみをパブリッシュ
-      if (distance <= 1.0 && std::abs(angle_diff) <= M_PI / 2.0) {
-        visualization_msgs::msg::Marker marker;
-        marker.header.frame_id = "map";
-        marker.header.stamp = rclcpp::Node::now();
-        marker.ns = "local_obstacle_markers";
-        marker.id = id++;
-        marker.type = visualization_msgs::msg::Marker::CYLINDER;
-        marker.action = visualization_msgs::msg::Marker::ADD;
-        marker.pose.position.x = obstacle.x;
-        marker.pose.position.y = obstacle.y;
-        marker.pose.position.z = 0.0;
-        marker.pose.orientation.x = 0.0;
-        marker.pose.orientation.y = 0.0;
-        marker.pose.orientation.z = 0.0;
-        marker.pose.orientation.w = 1.0;
-        marker.scale.x = obstacle.radius + 0.05;  // 直径を指定
-        marker.scale.y = obstacle.radius + 0.05;
-        marker.scale.z = 0.5 + 0.1;  // 高さは固定
-        marker.color.a = 1.0;  // 透明度
-        marker.color.r = 0.5;
-        marker.color.g = 0.5;
-        marker.color.b = 0.0;
+          // 半径1m以内かつ前方180度内にある障害物のみを処理
+          if (distance <= 1.0 && std::abs(angle_diff) <= M_PI / 2.0) {
+              // 障害物の端の座標を計算 (正規化されたベクトルを使用)
+              double vector_x = base_x - obstacle.x;
+              double vector_y = base_y - obstacle.y;
+              double vector_magnitude = std::sqrt(vector_x * vector_x + vector_y * vector_y);
 
-        marker_array.markers.push_back(marker);
+              double obstacle_edge_x = obstacle.x + (vector_x / vector_magnitude) * obstacle.radius / 2;
+              double obstacle_edge_y = obstacle.y + (vector_y / vector_magnitude) * obstacle.radius / 2;
+
+              // マーカー作成
+              visualization_msgs::msg::Marker marker;
+              marker.header.frame_id = "map";
+              marker.header.stamp = rclcpp::Node::now();
+              marker.ns = "local_obstacle_markers";
+              marker.id = id++;
+              marker.type = visualization_msgs::msg::Marker::SPHERE; // エッジを示すための球形マーカー
+              marker.action = visualization_msgs::msg::Marker::ADD;
+              marker.pose.position.x = obstacle_edge_x;
+              marker.pose.position.y = obstacle_edge_y;
+              marker.pose.position.z = 0.0;
+              marker.pose.orientation.x = 0.0;
+              marker.pose.orientation.y = 0.0;
+              marker.pose.orientation.z = 0.0;
+              marker.pose.orientation.w = 1.0;
+              marker.scale.x = 0.1;  // 端の位置を示すためのマーカーサイズ
+              marker.scale.y = 0.1;
+              marker.scale.z = 0.1;
+              marker.color.a = 1.0;  // 透明度
+              marker.color.r = 0.0;
+              marker.color.g = 0.0;
+              marker.color.b = 1.0;
+
+              marker_array.markers.push_back(marker);
+          }
       }
-    }
 
-    // マーカー配列をパブリッシュ
-    local_obstacle_pub->publish(marker_array);
+      // マーカー配列をパブリッシュ
+      local_obstacle_pub->publish(marker_array);
   }
+
 
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr global_obstacle_pub;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr local_obstacle_pub;

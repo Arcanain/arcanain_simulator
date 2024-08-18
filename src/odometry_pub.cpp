@@ -166,7 +166,7 @@ private:
     line_strip_marker.color.a = 1.0;  // 不透明
 
     // 円周上の点を追加
-    double radius = 2.0;
+    double radius = 1.0;
     int num_points = 100;
     for (int i = 0; i <= num_points; ++i) {
       double angle = i * 2.0 * M_PI / num_points;
