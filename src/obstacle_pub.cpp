@@ -1,6 +1,10 @@
 #include "rclcpp/rclcpp.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "visualization_msgs/msg/marker_array.hpp"
+#include <cmath>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+
+
 
 using std::placeholders::_1;
 using namespace std::chrono_literals;
@@ -100,15 +104,15 @@ private:
     // base_linkの位置を更新
     base_x = msg->pose.pose.position.x;
     base_y = msg->pose.pose.position.y;
+    //double yaw = tf2::getYaw(msg->pose.pose.orientation);  // ロボットの現在の向きを取得
+    tf2::Quaternion quat;
+    tf2::fromMsg(msg->pose.pose.orientation, quat);
+    tf2::Matrix3x3 mat(quat);
+    double roll_tmp, pitch_tmp, yaw_tmp;
+    mat.getRPY(roll_tmp, pitch_tmp, yaw_tmp);
 
-    // // local obstacleの全てのマーカーをクリア
-    // visualization_msgs::msg::Marker delete_marker;
-    // delete_marker.header.frame_id = "map";
-    // delete_marker.header.stamp = rclcpp::Node::now();
-    // delete_marker.action = visualization_msgs::msg::Marker::DELETEALL;
-    // visualization_msgs::msg::MarkerArray delete_marker_array;
-    // delete_marker_array.markers.push_back(delete_marker);
-    // local_obstacle_pub->publish(delete_marker_array);
+    double yaw = yaw_tmp;
+
 
     visualization_msgs::msg::MarkerArray marker_array;
     int id = 0;
@@ -116,12 +120,16 @@ private:
     for (const auto & obstacle : obstacles) {
       // base_linkからの距離を計算
       double distance = std::sqrt(
-        std::pow(obstacle.x - base_x, 2) + std::pow(
-          obstacle.y - base_y,
-          2));
+        std::pow(obstacle.x - base_x, 2) + std::pow(obstacle.y - base_y, 2));
 
-      // 半径2m以内にある障害物のみをパブリッシュ
-      if (distance <= 2.0) {
+      // base_linkから見た障害物の相対角度を計算
+      double angle_to_obstacle = std::atan2(obstacle.y - base_y, obstacle.x - base_x);
+
+      // 相対角度をロボットの前方180度内に制限
+      double angle_diff = std::fmod(angle_to_obstacle - yaw + M_PI, 2 * M_PI) - M_PI;
+
+      // 半径2m以内かつ前方180度内にある障害物のみをパブリッシュ
+      if (distance <= 1.0 && std::abs(angle_diff) <= M_PI / 2.0) {
         visualization_msgs::msg::Marker marker;
         marker.header.frame_id = "map";
         marker.header.stamp = rclcpp::Node::now();
@@ -129,9 +137,7 @@ private:
         marker.id = id++;
         marker.type = visualization_msgs::msg::Marker::CYLINDER;
         marker.action = visualization_msgs::msg::Marker::ADD;
-        // marker.pose.position.x = obstacle.x - base_x;  // base_link座標系での位置
-        // marker.pose.position.y = obstacle.y - base_y;
-        marker.pose.position.x = obstacle.x;  // map座標系での位置
+        marker.pose.position.x = obstacle.x;
         marker.pose.position.y = obstacle.y;
         marker.pose.position.z = 0.0;
         marker.pose.orientation.x = 0.0;
@@ -152,9 +158,6 @@ private:
 
     // マーカー配列をパブリッシュ
     local_obstacle_pub->publish(marker_array);
-
-    // マーカー配列をクリア
-    //marker_array.markers.clear();
   }
 
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr global_obstacle_pub;
