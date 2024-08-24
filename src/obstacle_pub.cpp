@@ -131,9 +131,11 @@ private:
       double angle_diff = std::fmod(angle_to_obstacle - yaw + M_PI, 2 * M_PI) - M_PI;
 
       // 半径1m以内かつ前方180度内にある障害物のみを処理
-      if (distance <= 1.0 && std::abs(angle_diff) <= M_PI / 2.0) {
-        // 障害物が検知された場合
-        is_obstacle_detected = true;
+      if (distance <= 1.0) {
+        if (std::abs(angle_diff) <= M_PI / 3.0){
+          // 障害物が検知された場合
+          is_obstacle_detected = true;
+        }
 
         // 障害物の端の座標を計算 (正規化されたベクトルを使用)
         double vector_x = base_x - obstacle.x;
