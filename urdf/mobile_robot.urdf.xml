@@ -4,6 +4,17 @@
 <!-- |    EDITING THIS FILE BY HAND IS NOT RECOMMENDED                                 | -->
 <!-- =================================================================================== -->
 <robot name="sam_bot">
+  <!-- ダミーのルートリンクを追加 -->
+  <link name="dummy_link">
+    <!-- ダミーリンクなのでビジュアルやコリジョン情報はなし -->
+  </link>
+
+  <!-- 既存のbase_linkをdummy_linkの子リンクとして定義 -->
+  <joint name="dummy_to_base" type="fixed">
+    <parent link="dummy_link"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
   <!-- Robot Base -->
   <link name="base_link">
     <visual>
@@ -27,11 +38,7 @@
   </link>
   <!-- Robot Footprint -->
   <link name="base_footprint">
-    <inertial>
-      <origin rpy="1.5707963267948966 0 1.5707963267948966" xyz="0 0 0"/>
-      <mass value="0"/>
-      <inertia ixx="0.0" ixy="0.0" ixz="0.0" iyy="0.0" iyz="0.0" izz="0.0"/>
-    </inertial>
+    <!-- 慣性情報を削除 -->
   </link>
   <joint name="base_joint" type="fixed">
     <parent link="base_link"/>

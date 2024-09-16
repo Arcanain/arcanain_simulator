@@ -130,7 +130,7 @@ private:
       // 相対角度をロボットの前方180度内に制限
       double angle_diff = std::fmod(angle_to_obstacle - yaw + M_PI, 2 * M_PI) - M_PI;
 
-      // 半径1m以内かつ前方180度内にある障害物のみを処理
+      // 半径1m以内かつ前方1200度内にある障害物のみを処理
       if (distance <= 1.0) {
         if (std::abs(angle_diff) <= M_PI / 3.0){
           // 障害物が検知された場合
