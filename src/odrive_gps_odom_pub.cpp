@@ -5,7 +5,6 @@
 #include "nav_msgs/msg/path.hpp"  // Pathを使用するために追加
 #include "nav_msgs/msg/odometry.hpp"
 #include "nav_msgs/msg/occupancy_grid.hpp"
-#include "sensor_msgs/msg/imu.hpp"  // IMUメッセージを使用するために追加
 #include "tf2/LinearMath/Quaternion.h"  // tf2::Quaternionを使用するために追加
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 #include "tf2_ros/static_transform_broadcaster.h"
@@ -19,7 +18,7 @@ class OdometryPublisher : public rclcpp::Node
 {
 public:
   OdometryPublisher()
-  : Node("odrive_imu_odom_pub")
+  : Node("odrive_gps_odom_pub")
   {
 
     odom_pub = this->create_publisher<nav_msgs::msg::Odometry>("odom", 50);
@@ -37,9 +36,9 @@ public:
     odrive_odom_sub = this->create_subscription<nav_msgs::msg::Odometry>(
     "odrive_odom", 10, std::bind(&OdometryPublisher::odometry_callback, this, _1));
 
-    // IMUデータをサブスクライブ
-    imu_subscriber = this->create_subscription<sensor_msgs::msg::Imu>(
-      "imu_data_raw", 10, std::bind(&OdometryPublisher::imu_callback, this, std::placeholders::_1));
+    // gnss_pathトピックからのサブスクライバを追加
+    gnss_path_subscriber = this->create_subscription<nav_msgs::msg::Path>(
+      "/gnss_path", 10, std::bind(&OdometryPublisher::gnss_path_callback, this, std::placeholders::_1));
 
     x = 0.0;
     y = 0.0;
@@ -68,9 +67,9 @@ private:
   void odometry_callback(const nav_msgs::msg::Odometry::SharedPtr msg)
   {
       // オドメトリからx, y, thetaを取得
-      x = msg->pose.pose.position.x;
-      y = msg->pose.pose.position.y;
-/*
+      //x = msg->pose.pose.position.x;
+      //y = msg->pose.pose.position.y;
+
       tf2::Quaternion quat;
       tf2::fromMsg(msg->pose.pose.orientation, quat);
       tf2::Matrix3x3 mat(quat);
@@ -78,47 +77,29 @@ private:
       mat.getRPY(roll_tmp, pitch_tmp, yaw_tmp);
 
       yaw = yaw_tmp;
-*/
+
       odom_subscribe_flag = true;
   }
 
-  void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
+  void gnss_path_callback(const nav_msgs::msg::Path::SharedPtr msg)
   {
-    // IMUデータからクォータニオンを取得
-    tf2::Quaternion quat;
-    tf2::fromMsg(msg->orientation, quat);
-
-    // クォータニオンをオイラー角に変換してヨー角を取得
-    tf2::Matrix3x3 mat(quat);
-    double roll_tmp, pitch_tmp, yaw_tmp;
-    mat.getRPY(roll_tmp, pitch_tmp, yaw_tmp);
-
-    // ヨー角を更新
-    yaw = yaw_tmp;
-    
-    if (!imu_subscribe_flag){
-      init_yaw = yaw;
+    // 最後の位置を取得してx, yを更新
+    if (!msg->poses.empty()) {
+      x = msg->poses.back().pose.position.x;
+      y = msg->poses.back().pose.position.y;
     }
-    //yaw = yaw - init_yaw;
-    imu_subscribe_flag = true;
+    gnss_subscribe_flag = true;
   }
 
   void timer_callback()
   {
-    if (odom_subscribe_flag and imu_subscribe_flag) {
+    if (odom_subscribe_flag && gnss_subscribe_flag) {
       /**
       *******************************************************************************************
       * Odometry Calculation
       *******************************************************************************************
       */
       current_time = this->get_clock()->now();
-      
-      auto [x_in_robot, y_in_robot] = transform_to_robot_frame(x, y, init_yaw);
-      double trans_x = x_in_robot;
-      double trans_y = y_in_robot;
-      
-      //double trans_x = x;
-      //double trans_y = y;
 
       tf2::Quaternion odom_quat;
       odom_quat.setRPY(0, 0, yaw);  // ロール、ピッチ、ヨーをセット
@@ -130,8 +111,8 @@ private:
       odom_trans.header.frame_id = "odom";
       odom_trans.child_frame_id = "base_link";
 
-      odom_trans.transform.translation.x = trans_x;
-      odom_trans.transform.translation.y = trans_y;
+      odom_trans.transform.translation.x = x;
+      odom_trans.transform.translation.y = y;
       odom_trans.transform.translation.z = 0.0;
       odom_trans.transform.rotation = odom_quat_msg;
 
@@ -142,8 +123,8 @@ private:
       odom.header.frame_id = "odom";
       odom.child_frame_id = "base_link";
 
-      odom.pose.pose.position.x = trans_x;
-      odom.pose.pose.position.y = trans_y;
+      odom.pose.pose.position.x = x;
+      odom.pose.pose.position.y = y;
       odom.pose.pose.position.z = 0.0;
       odom.pose.pose.orientation = odom_quat_msg;
 
@@ -160,8 +141,8 @@ private:
       */
       // パスに現在の位置を追加
       geometry_msgs::msg::PoseStamped this_pose_stamped;
-      this_pose_stamped.pose.position.x = trans_x;
-      this_pose_stamped.pose.position.y = trans_y;
+      this_pose_stamped.pose.position.x = x;
+      this_pose_stamped.pose.position.y = y;
       this_pose_stamped.pose.orientation = odom_quat_msg;
       this_pose_stamped.header.stamp = current_time;
       this_pose_stamped.header.frame_id = "odom";
@@ -233,12 +214,6 @@ private:
     }
   }
 
-  std::pair<double, double> transform_to_robot_frame(double trans_x, double trans_y, double trans_yaw){
-    double x_in_robot = trans_x * cos(trans_yaw) - trans_y * sin(trans_yaw);
-    double y_in_robot = trans_y * cos(trans_yaw) + trans_x * sin(trans_yaw);
-    return {x_in_robot, y_in_robot};
-  }
-
   void send_static_transform()
   {
     geometry_msgs::msg::TransformStamped static_transform_stamped;
@@ -260,16 +235,16 @@ private:
   rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr localmap_pub;
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr laser_range_pub;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_subscriber;
-  rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_subscriber;
+
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odrive_odom_sub;
+  rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr gnss_path_subscriber;
   
   std::shared_ptr<tf2_ros::TransformBroadcaster> odom_broadcaster;
   std::shared_ptr<tf2_ros::StaticTransformBroadcaster> static_broadcaster_;
   rclcpp::TimerBase::SharedPtr timer_;
   nav_msgs::msg::Path path;  // Pathメッセージのメンバ変数を追加
-  bool odom_subscribe_flag = false, imu_subscribe_flag = false;
+  bool odom_subscribe_flag = false, gnss_subscribe_flag = false;
   double x, y, th, vx, vth, yaw;
-  double init_yaw = 0.0;
   rclcpp::Time current_time, last_time;
 };
 

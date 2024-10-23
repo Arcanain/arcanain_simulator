@@ -164,10 +164,9 @@ private:
     line_strip_marker.color.g = 0.0;
     line_strip_marker.color.b = 0.0;
     line_strip_marker.color.a = 1.0;  // 不透明
-
+    int num_points = 100;
     // 円周上の点を追加
     double radius = 1.0;
-    int num_points = 100;
     for (int i = 0; i <= num_points; ++i) {
       double angle = i * 2.0 * M_PI / num_points;
       geometry_msgs::msg::Point p;
@@ -177,9 +176,7 @@ private:
       line_strip_marker.points.push_back(p);
     }
 
-    // マーカーをパブリッシュ
-    laser_range_pub->publish(line_strip_marker);
-
+    // マーカーをパブリッシュth
     // 時刻の保存
     last_time = current_time;
   }
