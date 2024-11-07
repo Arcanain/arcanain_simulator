@@ -76,8 +76,8 @@ private:
       double roll_tmp, pitch_tmp, yaw_tmp;
       mat.getRPY(roll_tmp, pitch_tmp, yaw_tmp);
 
-      yaw = yaw_tmp;
-
+      yaw = yaw_tmp + M_PI;
+      RCLCPP_INFO(this->get_logger(), "yaw: %lf", yaw);
       odom_subscribe_flag = true;
   }
 
