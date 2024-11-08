@@ -18,7 +18,7 @@ class OdometryPublisher : public rclcpp::Node
 {
 public:
   OdometryPublisher()
-  : Node("odrive_gps_odom_pub")
+  : Node("odrive_gps_switch_pub")
   {
 
     odom_pub = this->create_publisher<nav_msgs::msg::Odometry>("odom", 50);
@@ -34,11 +34,7 @@ public:
       "cmd_vel", 10, std::bind(&OdometryPublisher::cmd_vel_callback, this, std::placeholders::_1));
 
     odrive_odom_sub = this->create_subscription<nav_msgs::msg::Odometry>(
-    "odrive_odom", 10, std::bind(&OdometryPublisher::odometry_callback, this, _1));
-
-    // gnss_pathトピックからのサブスクライバを追加
-    gnss_path_subscriber = this->create_subscription<nav_msgs::msg::Path>(
-      "/gnss_path", 10, std::bind(&OdometryPublisher::gnss_path_callback, this, std::placeholders::_1));
+    "switch_odom", 10, std::bind(&OdometryPublisher::odometry_callback, this, _1));
 
     x = 0.0;
     y = 0.0;
@@ -67,8 +63,8 @@ private:
   void odometry_callback(const nav_msgs::msg::Odometry::SharedPtr msg)
   {
       // オドメトリからx, y, thetaを取得
-      //x = msg->pose.pose.position.x;
-      //y = msg->pose.pose.position.y;
+      x = msg->pose.pose.position.x;
+      y = msg->pose.pose.position.y;
 
       tf2::Quaternion quat;
       tf2::fromMsg(msg->pose.pose.orientation, quat);
@@ -77,23 +73,13 @@ private:
       mat.getRPY(roll_tmp, pitch_tmp, yaw_tmp);
 
       yaw = yaw_tmp;
-      RCLCPP_INFO(this->get_logger(), "yaw: %lf", yaw);
-      odom_subscribe_flag = true;
-  }
 
-  void gnss_path_callback(const nav_msgs::msg::Path::SharedPtr msg)
-  {
-    // 最後の位置を取得してx, yを更新
-    if (!msg->poses.empty()) {
-      x = msg->poses.back().pose.position.x;
-      y = msg->poses.back().pose.position.y;
-    }
-    gnss_subscribe_flag = true;
+      odom_subscribe_flag = true;
   }
 
   void timer_callback()
   {
-    if (odom_subscribe_flag && gnss_subscribe_flag) {
+    if (odom_subscribe_flag) {
       /**
       *******************************************************************************************
       * Odometry Calculation
@@ -237,13 +223,12 @@ private:
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_subscriber;
 
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odrive_odom_sub;
-  rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr gnss_path_subscriber;
   
   std::shared_ptr<tf2_ros::TransformBroadcaster> odom_broadcaster;
   std::shared_ptr<tf2_ros::StaticTransformBroadcaster> static_broadcaster_;
   rclcpp::TimerBase::SharedPtr timer_;
   nav_msgs::msg::Path path;  // Pathメッセージのメンバ変数を追加
-  bool odom_subscribe_flag = false, gnss_subscribe_flag = false;
+  bool odom_subscribe_flag = false;
   double x, y, th, vx, vth, yaw;
   rclcpp::Time current_time, last_time;
 };
