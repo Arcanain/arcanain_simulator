@@ -31,7 +31,7 @@ public:
       "cmd_vel", 10, std::bind(&OdometryPublisher::cmd_vel_callback, this, std::placeholders::_1));
 
     x = 0.0;
-    y = 0.0;
+    y = -10.0;
     th = 0.0;
 
     current_time = this->get_clock()->now();

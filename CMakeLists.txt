@@ -28,6 +28,9 @@ ament_target_dependencies(odrive_imu_odom_pub rclcpp tf2_geometry_msgs nav_msgs 
 add_executable(odrive_gps_odom_pub src/odrive_gps_odom_pub.cpp)
 ament_target_dependencies(odrive_gps_odom_pub rclcpp tf2_geometry_msgs nav_msgs geometry_msgs tf2_ros visualization_msgs)
 
+add_executable(odrive_gps_only_pub src/odrive_gps_only_pub.cpp)
+ament_target_dependencies(odrive_gps_only_pub rclcpp tf2_geometry_msgs nav_msgs geometry_msgs tf2_ros visualization_msgs)
+
 # obstacle_pub
 add_executable(obstacle_pub src/obstacle_pub.cpp)
 ament_target_dependencies(obstacle_pub rclcpp nav_msgs visualization_msgs tf2_geometry_msgs)
@@ -41,6 +44,7 @@ install(TARGETS
   odometry_pub
   odrive_odometry_pub
   odrive_gps_odom_pub
+  odrive_gps_only_pub
   odrive_imu_odom_pub
   obstacle_pub
   waypoint_pub
