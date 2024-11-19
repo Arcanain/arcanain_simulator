@@ -21,7 +21,7 @@ public:
   : Node("odrive_gps_switch_pub")
   {
 
-    odom_pub = this->create_publisher<nav_msgs::msg::Odometry>("odom", 50);
+    odom_pub = this->create_publisher<nav_msgs::msg::Odometry>("odom", 10);
     path_pub = this->create_publisher<nav_msgs::msg::Path>("odom_path", 50);
     localmap_pub = this->create_publisher<nav_msgs::msg::OccupancyGrid>("local_map", 10);
     laser_range_pub = this->create_publisher<visualization_msgs::msg::Marker>(
@@ -48,8 +48,8 @@ public:
     timer_ = this->create_wall_timer(50ms, std::bind(&OdometryPublisher::timer_callback, this));
 
     // 静的な変換を送信するタイマー
-    static_broadcaster_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(this);
-    send_static_transform();
+    //static_broadcaster_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(this);
+    //send_static_transform();
   }
 
 private:
@@ -200,6 +200,7 @@ private:
     }
   }
 
+  /*
   void send_static_transform()
   {
     geometry_msgs::msg::TransformStamped static_transform_stamped;
@@ -215,6 +216,7 @@ private:
     static_transform_stamped.transform.rotation.w = 1.0;
     static_broadcaster_->sendTransform(static_transform_stamped);
   }
+  */
 
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub;
