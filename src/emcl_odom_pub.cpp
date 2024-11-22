@@ -36,9 +36,13 @@ public:
     odrive_odom_sub = this->create_subscription<nav_msgs::msg::Odometry>(
     "switch_odom", 10, std::bind(&OdometryPublisher::odometry_callback, this, _1));
 
-    x = 0.0;
-    y = 0.0;
-    th = 0.0;
+    this->declare_parameter<double>("init_x", 0.0);
+    this->declare_parameter<double>("init_y", 0.0);
+    this->declare_parameter<double>("init_th", 0.0);
+
+    x = this->get_parameter("init_x").as_double();
+    y = this->get_parameter("init_y").as_double();
+    th = this->get_parameter("init_th").as_double();
 
     current_time = this->get_clock()->now();
     last_time = this->get_clock()->now();
