@@ -18,7 +18,7 @@ class OdometryPublisher : public rclcpp::Node
 {
 public:
   OdometryPublisher()
-  : Node("odrive_gps_switch_pub")
+  : Node("emcl_odom_pub")
   {
 
     odom_pub = this->create_publisher<nav_msgs::msg::Odometry>("odom", 10);
@@ -48,8 +48,8 @@ public:
     timer_ = this->create_wall_timer(50ms, std::bind(&OdometryPublisher::timer_callback, this));
 
     // 静的な変換を送信するタイマー
-    static_broadcaster_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(this);
-    send_static_transform();
+    //static_broadcaster_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(this);
+    //send_static_transform();
   }
 
 private:
@@ -91,17 +91,18 @@ private:
       odom_quat.setRPY(0, 0, yaw);  // ロール、ピッチ、ヨーをセット
       geometry_msgs::msg::Quaternion odom_quat_msg =
         tf2::toMsg(odom_quat);  // tf2::Quaternionからgeometry_msgs::msg::Quaternionに変換
+      /*emclのときだけ削除
       geometry_msgs::msg::TransformStamped odom_trans;
       odom_trans.header.stamp = current_time;
       odom_trans.header.frame_id = "odom";
       odom_trans.child_frame_id = "base_link";
-
       odom_trans.transform.translation.x = x;
       odom_trans.transform.translation.y = y;
       odom_trans.transform.translation.z = 0.0;
       odom_trans.transform.rotation = odom_quat_msg;
 
       odom_broadcaster->sendTransform(odom_trans);
+      */
 
       nav_msgs::msg::Odometry odom;
       odom.header.stamp = current_time;
@@ -199,6 +200,7 @@ private:
     }
   }
 
+  /*
   void send_static_transform()
   {
     geometry_msgs::msg::TransformStamped static_transform_stamped;
@@ -214,6 +216,7 @@ private:
     static_transform_stamped.transform.rotation.w = 1.0;
     static_broadcaster_->sendTransform(static_transform_stamped);
   }
+  */
 
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub;

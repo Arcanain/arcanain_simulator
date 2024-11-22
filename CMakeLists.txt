@@ -39,6 +39,9 @@ ament_target_dependencies(obstacle_pub rclcpp nav_msgs visualization_msgs tf2_ge
 add_executable(waypoint_pub src/waypoint_pub.cpp)
 ament_target_dependencies(waypoint_pub rclcpp nav_msgs geometry_msgs)
 
+add_executable(emcl_odom_pub src/emcl_odom_pub.cpp)
+ament_target_dependencies(emcl_odom_pub rclcpp tf2_geometry_msgs nav_msgs geometry_msgs tf2_ros visualization_msgs)
+
 # Install Cpp executables
 install(TARGETS
   odometry_pub
@@ -46,6 +49,7 @@ install(TARGETS
   odrive_gps_odom_pub
   odrive_imu_odom_pub
   odrive_gps_switch_pub
+  emcl_odom_pub
   obstacle_pub
   waypoint_pub
   DESTINATION lib/${PROJECT_NAME}
