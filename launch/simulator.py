@@ -1,8 +1,9 @@
 import os
 
 from launch import LaunchDescription
-from launch.substitutions import PathJoinSubstitution
-
+from launch.substitutions import PathJoinSubstitution, LaunchConfiguration
+from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
@@ -10,6 +11,17 @@ from launch_ros.substitutions import FindPackageShare
 def generate_launch_description():
     package_name = 'arcanain_simulator'
     rviz_file_name = "arcanain_simulator.rviz"
+
+    # 引数の宣言（コマンドライン引数で指定可能にする）
+    odometry_init_x_arg = DeclareLaunchArgument(
+        "init_x", default_value="0.0", description="Initial x position for odometry_pub"
+    )
+    odometry_init_y_arg = DeclareLaunchArgument(
+        "init_y", default_value="0.0", description="Initial y position for odometry_pub"
+    )
+    odometry_init_th_arg = DeclareLaunchArgument(
+        "init_th", default_value="0.0", description="Initial theta for odometry_pub"
+    )
 
     file_path = os.path.expanduser('~/ros2_ws/src/arcanain_simulator/urdf/mobile_robot.urdf.xml')
 
@@ -48,6 +60,11 @@ def generate_launch_description():
         package=package_name,
         executable='odometry_pub',
         output="screen",
+        parameters=[
+            {"init_x": LaunchConfiguration("init_x")},
+            {"init_y": LaunchConfiguration("init_y")},
+            {"init_th": LaunchConfiguration("init_th")}
+        ]
     )
 
     obstacle_pub_node = Node(
@@ -63,6 +80,9 @@ def generate_launch_description():
     )
 
     nodes = [
+        odometry_init_x_arg,
+        odometry_init_y_arg,
+        odometry_init_th_arg,
         rviz_node,
         robot_description_rviz_node,
         joint_state_publisher_rviz_node,

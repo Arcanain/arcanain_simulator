@@ -29,10 +29,14 @@ public:
     // cmd_velサブスクライバを追加
     cmd_vel_subscriber = this->create_subscription<geometry_msgs::msg::Twist>(
       "cmd_vel", 10, std::bind(&OdometryPublisher::cmd_vel_callback, this, std::placeholders::_1));
+    
+    this->declare_parameter<double>("init_x", 0.0);
+    this->declare_parameter<double>("init_y", 0.0);
+    this->declare_parameter<double>("init_th", 0.0);
 
-    x = 0.0;
-    y = 0.0;
-    th = 0.0;
+    x = this->get_parameter("init_x").as_double();
+    y = this->get_parameter("init_y").as_double();
+    th = this->get_parameter("init_th").as_double();
 
     current_time = this->get_clock()->now();
     last_time = this->get_clock()->now();
