@@ -33,8 +33,8 @@ public:
     cmd_vel_subscriber = this->create_subscription<geometry_msgs::msg::Twist>(
       "cmd_vel", 10, std::bind(&OdometryPublisher::cmd_vel_callback, this, std::placeholders::_1));
 
-    odrive_odom_sub = this->create_subscription<nav_msgs::msg::Odometry>(
-    "switch_odom", 10, std::bind(&OdometryPublisher::odometry_callback, this, _1));
+    odrive_odom_sub = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
+    "mcl_pose", 10, std::bind(&OdometryPublisher::odometry_callback, this, _1));
 
     x = 0.0;
     y = 0.0;
@@ -60,14 +60,16 @@ private:
     vth = msg->angular.z;
   }
 
-  void odometry_callback(const nav_msgs::msg::Odometry::SharedPtr msg)
+  void odometry_callback(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg)
   {
+      const auto &emcl_pose = msg->pose.pose;
       // オドメトリからx, y, thetaを取得
-      x = msg->pose.pose.position.x;
-      y = msg->pose.pose.position.y;
+      x = emcl_pose.position.x;
+      y = emcl_pose.position.y;
+      RCLCPP_INFO(this->get_logger(), "emcl x, y:%lf,%lf",x, y);
 
       tf2::Quaternion quat;
-      tf2::fromMsg(msg->pose.pose.orientation, quat);
+      tf2::fromMsg(emcl_pose.orientation, quat);
       tf2::Matrix3x3 mat(quat);
       double roll_tmp, pitch_tmp, yaw_tmp;
       mat.getRPY(roll_tmp, pitch_tmp, yaw_tmp);
@@ -224,7 +226,7 @@ private:
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr laser_range_pub;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_subscriber;
 
-  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odrive_odom_sub;
+  rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr odrive_odom_sub;
   
   std::shared_ptr<tf2_ros::TransformBroadcaster> odom_broadcaster;
   std::shared_ptr<tf2_ros::StaticTransformBroadcaster> static_broadcaster_;
